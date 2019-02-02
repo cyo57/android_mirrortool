@@ -1,4 +1,4 @@
-# Androdi Screen Mirroring tool
+# Android Screen Mirroring tool
 
 adb を使って Android の画面をミラーリングします。
 Oculus Go にも使えます。
@@ -12,7 +12,14 @@ Oculus Go にも使えます。
   2. pip3 install pywin32
 3. adb を install してください (Android SDK の install で OK)
 4. adb.exe にパスを通してください
-  - AndroidStudio の場合は C:\Users\<USERNAME>\AppData\Local\Android\sdk\platform-tools あたりにあります
+  - AndroidStudio の場合は C:/Users/<USERNAME>/AppData/Local/Android/sdk/platform-tools あたりにあります
+
+
+## Install 方法 (Linux)
+
+    $ sudo atp install python3-pip
+    $ pip3 install opencv-python
+    $ sudo atp install adb
 
 
 ## 接続方法
@@ -20,7 +27,11 @@ Oculus Go にも使えます。
 1. Android 端末を Developer mode にします
 2. Android 端末を USB でつなぎます
 
+[Android Developer: Run apps on a hardware device](https://developer.android.com/studio/run/device)
+
 adb の Wi-Fi 接続も可能です。
+
+[Android Developer: Android Debug Bridge (adb)](https://developer.android.com/studio/command-line/adb)
 
 
 ## Mirroring
@@ -37,7 +48,7 @@ Wi-Fi の場合は bitrate や画面サイズを下げてください。
 
 ## Screen Capture
 
-    python android_mirrortool.py -c を実行
+    python android_mirrortool.py -c
 
 png で保存します。
 
