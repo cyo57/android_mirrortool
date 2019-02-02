@@ -3,7 +3,7 @@
 
 # $ pip3 install opencv-python
 # $ pip3 install pywin32
-# $ python capture_android.py
+# $ python android_mirrortool.py
 
 
 import  os
