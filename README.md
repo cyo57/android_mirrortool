@@ -36,9 +36,11 @@ adb の Wi-Fi 接続も可能です。
 
 ## Mirroring
 
+linux の場合は python を python3 に置き換えてください。
+
     python android_mirrortool.py
 
-画面に動きがないと Windows が出ません。
+画面に動きがないと Windows が出ません。Android 側で操作してみてください。
 
 Wi-Fi の場合は bitrate や画面サイズを下げてください。
 
