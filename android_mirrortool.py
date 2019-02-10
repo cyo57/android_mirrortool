@@ -156,14 +156,15 @@ class MirrorPlayer( threading.Thread ):
         self.name= file_name
 
     def play( self, input_file_name ):
+        title= 'Android mirror'
         video= cv2.VideoCapture( input_file_name )
-        cv2.namedWindow( 'Android mirror', cv2.WINDOW_AUTOSIZE )
+        cv2.namedWindow( title, cv2.WINDOW_AUTOSIZE )
         while True:
             is_read,frame= video.read()
             k= cv2.waitKey( 1 )
             if k  == 27 or not is_read:
                 break
-            cv2.imshow( 'Android mirror', frame )
+            cv2.imshow( title, frame )
         video.release()
 
     def run( self ):
