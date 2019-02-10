@@ -30,14 +30,17 @@ class Config:
 
 class WinPipe:
 
-    def __init__( self, name= None ):
+    def __init__( self, pipe_name= None ):
         self.wpipe= None
-        if name is not None:
-            self.open( name )
+        if pipe_name is not None:
+            self.open( pipe_name )
+
+    @staticmethod
+    def get_pipe_name( pipe_name ):
+        return  r'\\.\pipe\Streaming' + pipe_name
 
     def open( self, pipe_name ):
-        self.name= r'\\.\pipe\Streaming'+pipe_name
-        self.wpipe= win32pipe.CreateNamedPipe( self.name, win32pipe.PIPE_ACCESS_DUPLEX, win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT, 1, Config.BufferSize, Config.BufferSize, 0, None )
+        self.wpipe= win32pipe.CreateNamedPipe( pipe_name, win32pipe.PIPE_ACCESS_DUPLEX, win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT, 1, Config.BufferSize, Config.BufferSize, 0, None )
         win32pipe.ConnectNamedPipe( self.wpipe, None )
 
     def close( self ):
@@ -62,25 +65,33 @@ class WinPipe:
 
 class FifoPipe:
 
-    def __init__( self, name= None ):
+    def __init__( self, pipe_name= None ):
         self.wpipe= None
-        if name is not None:
-            self.open( name )
+        if pipe_name is not None:
+            self.open( pipe_name )
+
+    @staticmethod
+    def get_pipe_name( pipe_name ):
+        return  '/tmp/Streaming' + pipe_name
 
     def open( self, pipe_name ):
-        self.name= '/tmp/Streaming'+pipe_name
+        self.pipe_name= pipe_name
         try:
-            os.mkfifo( self.name )
+            os.mkfifo( pipe_name )
         except OSError as e:
             import  errno
             if e.errno != errno.EEXIST:
                 raise
-        self.wpipe= open( self.name, 'wb' )
+        self.wpipe= open( pipe_name, 'wb' )
 
     def close( self ):
         if self.wpipe:
-            os.close( self.wpipe )
-        self.wpipe= None
+            try:
+                self.wpipe.close()
+                self.wpipe= None
+                os.remove( self.pipe_name )
+            except OSError as e:
+                pass
 
     def write( self, data ):
         try:
@@ -103,14 +114,15 @@ class StreamingPipe( threading.Thread ):
         self.pipe= None
         self.proc= None
         self.command= command
-        self.pipe_name= pipe_name
-
-    def exec_pipe( self, command, output_pipe_name ):
         if platform.system() == 'Windows':
-            self.pipe= WinPipe( output_pipe_name )
+            self.pipe_class= WinPipe
         else:
-            self.pipe= FifoPipe( output_pipe_name )
-        pipe= self.pipe
+            self.pipe_class= FifoPipe
+        self.pipe_name= self.pipe_class.get_pipe_name( pipe_name )
+
+    def exec_pipe( self, command, pipe_name ):
+        pipe= self.pipe_class( pipe_name )
+        self.pipe= pipe
         try:
             with subprocess.Popen( command, stdout=subprocess.PIPE ) as proc:
                 self.proc= proc
@@ -132,34 +144,30 @@ class StreamingPipe( threading.Thread ):
         self.proc.kill()
         self.pipe.close()
 
+    def get_filename( self ):
+        return  self.pipe_name
+
 
 
 class MirrorPlayer( threading.Thread ):
 
-    def __init__( self, pipe_name ):
+    def __init__( self, file_name= None ):
         super().__init__()
-        self.pipe_name= pipe_name
+        self.name= file_name
 
-    def play( self, input_pipe_name ):
-        if platform.system() == 'Windows':
-            self.name= r'\\.\pipe\Streaming' + input_pipe_name
-        else:
-            self.name= '/tmp/Streaming' + input_pipe_name
-        video= cv2.VideoCapture( self.name )
+    def play( self, input_file_name ):
+        video= cv2.VideoCapture( input_file_name )
         cv2.namedWindow( 'Android mirror', cv2.WINDOW_AUTOSIZE )
-        frame_rate= int( video.get(5) )
-        print( 'framerate', frame_rate )
-        frame_rate= 1
         while True:
             is_read,frame= video.read()
-            k= cv2.waitKey(frame_rate)
+            k= cv2.waitKey( 1 )
             if k  == 27 or not is_read:
                 break
             cv2.imshow( 'Android mirror', frame )
         video.release()
 
     def run( self ):
-        self.play( self.pipe_name )
+        self.play( self.name )
 
 
 
@@ -176,8 +184,8 @@ class ScreenMirror:
         pipe= StreamingPipe( command, pipe_name )
         pipe.start()
 
-        player= MirrorPlayer( pipe_name )
-        player.play( pipe_name )
+        player= MirrorPlayer()
+        player.play( pipe.get_filename() )
 
         pipe.stop_pipe()
         pipe.join()
